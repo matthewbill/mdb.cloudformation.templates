@@ -1,0 +1,64 @@
+{
+    "Parameters" : {
+        "ResourcePrefix" : {
+            "Description" : "The prefix to use before resource names. This enables multiple stacks to be created.",
+            "Type" : "String",
+            "Default": ""
+        },
+        "ComponentNameLowerCase": {
+            "Type":"String",
+            "Description": "The component name in lower case i.e. useraccounts",
+            "MinLength": "1"
+        },
+        "CacheNodeType" : {
+            "Type" : "String",
+            "Default": "cache.t2.micro"
+        },
+        "NumCacheNodes" : {
+            "Type" : "String",
+            "Default": "1"
+        }
+    },
+    "Conditions" : {
+        "AddResourcePrefix" : { "Fn::Not" : [{ "Fn::Equals" : [{"Ref" : "ResourcePrefix"}, ""]}] }
+    },
+    "Resources" : {
+        "ElasticacheSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupName": { 
+                    "Fn::If" : [
+                        "AddResourcePrefix", 
+                        { "Fn::Join": [ "-", [ {"Ref" : "ResourcePrefix"}, {"Ref" : "ComponentNameLowerCase"}, "cache-sg" ] ]},
+                        { "Fn::Join": [ "-", [ {"Ref" : "ComponentNameLowerCase"}, "cache-sg" ] ]}
+                    ] 
+                },
+                "GroupDescription": "The security group for an elasticache.",
+                "SecurityGroupIngress": [ {
+                    "IpProtocol": "tcp",
+                    "FromPort": "6379",
+                    "ToPort": "6379",
+                    "CidrIp" : "0.0.0.0/0"
+                } ],
+                "VpcId": "vpc-24016143"
+            }
+        },
+        "ElasticacheCluster": {
+            "Type": "AWS::ElastiCache::CacheCluster",
+            "Properties": {
+                "ClusterName": { 
+                    "Fn::If" : [
+                        "AddResourcePrefix", 
+                        { "Fn::Join": [ "-", [ {"Ref" : "ResourcePrefix"}, {"Ref" : "ComponentNameLowerCase"}, "cache" ] ]},
+                        { "Fn::Join": [ "-", [ {"Ref" : "ComponentNameLowerCase"}, "cache" ] ]}
+                    ] 
+                },
+                "Engine": "redis",
+                "CacheNodeType": "cache.t2.micro",
+                "NumCacheNodes": "1",
+                "CacheSubnetGroupName": "test-cache-subnet-group",
+                "VpcSecurityGroupIds": [{"Fn::GetAtt": [ "ElasticacheSecurityGroup", "GroupId"]}]
+            }
+        }
+    }
+}

@@ -1,0 +1,46 @@
+{
+  "Parameters": {
+      "Name": {
+          "Type":"String",
+          "Description": "The name of the s3 bucket.",
+          "MinLength": "1"
+      },
+      "Environment": {
+        "Type":"String",
+        "Description": "The Environment the resources belong to.",
+        "AllowedValues" : ["production", "staging", "test", "debug"],
+        "Default": "test"
+      },
+      "ResourcePrefix": {
+          "Type":"String",
+          "Description": "The prefix text to add to the end of resource names. This is useful for creating parallel stacks for environments.",
+          "Default": ""
+      }
+  },
+  "Conditions": {
+      "AddResourcePrefix" : {"Fn::Not" : [{"Fn::Equals" : [{"Ref" : "ResourcePrefix"}, ""]}] }
+  },
+  "Resources": {
+      "Bucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+              "BucketName": { 
+                  "Fn::If" : [
+                      "AddResourcePrefix", 
+                      { "Fn::Join": [ "-", [ {"Ref" : "ResourcePrefix"}, {"Ref" : "Name"} ] ]},
+                      {"Ref" : "Name"}
+                  ] 
+              },
+              "AccessControl" : "Private"
+          }
+      }
+  },
+  "Outputs": {
+      "BucketName": {
+          "Value": {
+              "Ref": "Bucket"
+          },
+          "Description": "The name of the s3 bucket."
+      }
+  }
+}
